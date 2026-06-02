@@ -13,6 +13,16 @@ const Tables = {
         liniya: []
     },
     editingId: null,
+
+    // Hisoblagich wizard holati
+    hisoblagichWizard: {
+        step: 1,
+        podstansiyaId: null,
+        podstansiyaNomi: '',
+        sana: '',
+        vaqt: '',
+        liniyalar: []
+    },
     
     /**
      * Sahifani yuklash
@@ -141,11 +151,290 @@ const Tables = {
     /**
      * Yangi yozuv qo'shish modal
      */
-    openAddModal: function() {
+    openAddModal: async function() {
         this.editingId = null;
+
+        // Hisoblagich sahifasi uchun maxsus wizard (2 bosqichli)
+        if (this.currentPage === 'hisoblagich') {
+            await this.openHisoblagichWizard();
+            return;
+        }
+
         document.getElementById('modalTitle').textContent = "Yangi yozuv qo'shish";
         this.renderForm();
         UI.openModal('dataModal');
+    },
+
+    /**
+     * HISOBLAGICH WIZARD - 1-bosqich:
+     *   Podstansiya, sana va vaqtni tanlash
+     */
+    openHisoblagichWizard: async function() {
+        // Kerakli ma'lumotlarni yuklash (podstansiya va liniya)
+        UI.showLoading(true);
+        try {
+            if (this.relatedData.podstansiya.length === 0) {
+                const podResp = await API.getAll(CONFIG.PAGES.podstansiya.sheet);
+                this.relatedData.podstansiya = podResp.data || [];
+            }
+            if (this.relatedData.liniya.length === 0) {
+                const linResp = await API.getAll(CONFIG.PAGES.liniya.sheet);
+                this.relatedData.liniya = linResp.data || [];
+            }
+        } catch (error) {
+            UI.showSnackbar('Xatolik: ' + error.message, 'error');
+            UI.showLoading(false);
+            return;
+        }
+        UI.showLoading(false);
+
+        // Wizard holatini boshlang'ich qiymatga qaytarish
+        this.hisoblagichWizard = {
+            step: 1,
+            podstansiyaId: null,
+            podstansiyaNomi: '',
+            sana: new Date().toISOString().split('T')[0],
+            vaqt: '00:00',
+            liniyalar: []
+        };
+
+        document.getElementById('modalTitle').textContent = "Yangi ko'rsatkich qo'shish (1/2)";
+        this.renderHisoblagichStep1();
+        UI.openModal('dataModal');
+    },
+
+    /**
+     * Wizard 1-bosqichni chizish
+     */
+    renderHisoblagichStep1: function() {
+        const w = this.hisoblagichWizard;
+        const podstansiyaList = this.relatedData.podstansiya || [];
+
+        let podOptions = '<option value="">-- Podstansiyani tanlang --</option>';
+        podstansiyaList.forEach(p => {
+            const sel = String(w.podstansiyaId) === String(p.id) ? 'selected' : '';
+            const label = p.nomi || p.id;
+            podOptions += `<option value="${p.id}" ${sel}>${p.id} - ${this.escapeHtml(label)}</option>`;
+        });
+
+        const html = `
+            <div class="wizard-step">
+                <div class="form-field">
+                    <label>Podstansiya *</label>
+                    <select id="wizPodstansiya" required>${podOptions}</select>
+                </div>
+                <div class="form-field">
+                    <label>Sana *</label>
+                    <input type="date" id="wizSana" value="${w.sana}" required>
+                </div>
+                <div class="form-field">
+                    <label>Vaqt *</label>
+                    <select id="wizVaqt" required>
+                        <option value="00:00" ${w.vaqt==='00:00'?'selected':''}>00:00</option>
+                        <option value="04:00" ${w.vaqt==='04:00'?'selected':''}>04:00</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        document.getElementById('formFields').innerHTML = html;
+
+        // Saqlash tugmasini "Keyingi" ga o'zgartirish
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.innerHTML = '<span class="material-icons">arrow_forward</span> Keyingi';
+        saveBtn.onclick = () => Tables.goToHisoblagichStep2();
+    },
+
+    /**
+     * 1-bosqichdan 2-bosqichga o'tish
+     */
+    goToHisoblagichStep2: function() {
+        const podId = document.getElementById('wizPodstansiya').value;
+        const sana = document.getElementById('wizSana').value;
+        const vaqt = document.getElementById('wizVaqt').value;
+
+        if (!podId) { UI.showSnackbar('Podstansiyani tanlang', 'error'); return; }
+        if (!sana)  { UI.showSnackbar('Sanani tanlang', 'error'); return; }
+        if (!vaqt)  { UI.showSnackbar('Vaqtni tanlang', 'error'); return; }
+        if (vaqt !== '00:00' && vaqt !== '04:00') {
+            UI.showSnackbar('Vaqt faqat 00:00 yoki 04:00 bo\'lishi mumkin', 'error');
+            return;
+        }
+
+        const pod = (this.relatedData.podstansiya || []).find(p => String(p.id) === String(podId));
+        if (!pod) { UI.showSnackbar('Podstansiya topilmadi', 'error'); return; }
+
+        // Shu podstansiyaga tegishli liniyalarni topish
+        const liniyalar = (this.relatedData.liniya || []).filter(l => String(l.p_id) === String(podId));
+        if (liniyalar.length === 0) {
+            UI.showSnackbar('Bu podstansiyaga tegishli liniyalar topilmadi', 'warning');
+            return;
+        }
+
+        this.hisoblagichWizard.podstansiyaId = podId;
+        this.hisoblagichWizard.podstansiyaNomi = pod.nomi || '';
+        this.hisoblagichWizard.sana = sana;
+        this.hisoblagichWizard.vaqt = vaqt;
+        this.hisoblagichWizard.liniyalar = liniyalar;
+        this.hisoblagichWizard.step = 2;
+
+        document.getElementById('modalTitle').textContent = "Liniyalar ko'rsatkichlari (2/2)";
+        this.renderHisoblagichStep2();
+    },
+
+    /**
+     * Wizard 2-bosqichni chizish - liniyalar jadvali (A+, A-, R+, R-)
+     */
+    renderHisoblagichStep2: function() {
+        const w = this.hisoblagichWizard;
+        // Sanani DD.MM.YYYY ko'rinishida ko'rsatish
+        const [yy, mm, dd] = w.sana.split('-');
+        const sanaDisplay = `${dd}.${mm}.${yy}`;
+
+        let html = `
+            <div class="wizard-info">
+                <div><span class="material-icons">electrical_services</span> <b>Podstansiya:</b> ${this.escapeHtml(w.podstansiyaNomi)}</div>
+                <div><span class="material-icons">event</span> <b>Sana:</b> ${sanaDisplay}</div>
+                <div><span class="material-icons">schedule</span> <b>Vaqt:</b> ${w.vaqt}</div>
+            </div>
+            <div class="wizard-table-wrap">
+                <table class="wizard-table">
+                    <thead>
+                        <tr>
+                            <th>Liniya nomi</th>
+                            <th>A+</th>
+                            <th>A-</th>
+                            <th>R+</th>
+                            <th>R-</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        w.liniyalar.forEach(l => {
+            const nomi = l.nomi || l.unique_nomi || ('ID ' + l.id);
+            html += `
+                <tr data-liniya-id="${l.id}">
+                    <td class="liniya-name-cell">${this.escapeHtml(nomi)}</td>
+                    <td><input type="number" step="any" class="w-aplus"  data-id="${l.id}" placeholder="A+"></td>
+                    <td><input type="number" step="any" class="w-aminus" data-id="${l.id}" placeholder="A-"></td>
+                    <td><input type="number" step="any" class="w-rplus"  data-id="${l.id}" placeholder="R+"></td>
+                    <td><input type="number" step="any" class="w-rminus" data-id="${l.id}" placeholder="R-"></td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        document.getElementById('formFields').innerHTML = html;
+
+        // "Saqlash" tugmasi -> batch save
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.innerHTML = '<span class="material-icons">save</span> Saqlash';
+        saveBtn.onclick = () => Tables.saveHisoblagichBatch();
+
+        // "Bekor qilish" tugmasi 1-bosqichga qaytarsa ham bo'ladi.
+        // Ammo cancelBtn standart yopish bilan ishlaydi; orqaga qaytish uchun alohida tugma qo'shamiz.
+        if (!document.getElementById('wizBackBtn')) {
+            const cancelBtn = document.getElementById('cancelBtn');
+            const backBtn = document.createElement('button');
+            backBtn.id = 'wizBackBtn';
+            backBtn.className = 'btn btn-secondary';
+            backBtn.innerHTML = '<span class="material-icons">arrow_back</span> Orqaga';
+            backBtn.onclick = () => {
+                Tables.hisoblagichWizard.step = 1;
+                document.getElementById('modalTitle').textContent = "Yangi ko'rsatkich qo'shish (1/2)";
+                Tables.renderHisoblagichStep1();
+                const b = document.getElementById('wizBackBtn');
+                if (b) b.remove();
+            };
+            cancelBtn.parentNode.insertBefore(backBtn, cancelBtn.nextSibling);
+        }
+    },
+
+    /**
+     * Bir nechta liniya bo'yicha ko'rsatkichlarni saqlash
+     */
+    saveHisoblagichBatch: async function() {
+        const w = this.hisoblagichWizard;
+        const rows = [];
+        let hasAny = false;
+        let hasError = false;
+
+        w.liniyalar.forEach(l => {
+            const aPlus  = document.querySelector(`.w-aplus[data-id="${l.id}"]`).value;
+            const aMinus = document.querySelector(`.w-aminus[data-id="${l.id}"]`).value;
+            const rPlus  = document.querySelector(`.w-rplus[data-id="${l.id}"]`).value;
+            const rMinus = document.querySelector(`.w-rminus[data-id="${l.id}"]`).value;
+
+            const allEmpty = !aPlus && !aMinus && !rPlus && !rMinus;
+            const someEmpty = !aPlus || !aMinus || !rPlus || !rMinus;
+
+            if (allEmpty) return; // bu liniyani o'tkazib yuborish
+
+            if (someEmpty) {
+                hasError = true;
+                UI.showSnackbar(`"${l.nomi || l.unique_nomi}" - barcha 4 qiymatni kiriting`, 'error');
+                return;
+            }
+
+            hasAny = true;
+            rows.push({
+                p_id: l.id,                                  // liniya id
+                liniya_nomi: l.nomi || l.unique_nomi || '',
+                sana: w.sana,
+                vaqt: w.vaqt,
+                a_plyus: aPlus,
+                a_minus: aMinus,
+                r_plyus: rPlus,
+                r_minus: rMinus
+            });
+        });
+
+        if (hasError) return;
+        if (!hasAny) {
+            UI.showSnackbar("Hech bo'lmaganda bitta liniya uchun qiymat kiriting", 'warning');
+            return;
+        }
+
+        UI.showLoading(true);
+        const author = Auth.getCurrentUser();
+        const page = CONFIG.PAGES.hisoblagich;
+        let okCount = 0;
+        let errCount = 0;
+
+        try {
+            // Ketma-ket saqlash (Apps Script konfliktidan saqlanish uchun)
+            for (const data of rows) {
+                try {
+                    await API.create(page.sheet, data, author);
+                    okCount++;
+                } catch (err) {
+                    errCount++;
+                    console.error('Saqlashda xato:', err);
+                }
+            }
+
+            if (errCount === 0) {
+                UI.showSnackbar(`${okCount} ta yozuv muvaffaqiyatli qo'shildi`, 'success');
+            } else {
+                UI.showSnackbar(`${okCount} ta saqlandi, ${errCount} ta xatolik`, 'warning');
+            }
+
+            // Orqaga tugmasini olib tashlash
+            const b = document.getElementById('wizBackBtn');
+            if (b) b.remove();
+
+            UI.closeModal('dataModal');
+            await this.loadData();
+        } catch (error) {
+            UI.showSnackbar('Xatolik: ' + error.message, 'error');
+        } finally {
+            UI.showLoading(false);
+        }
     },
     
     /**
@@ -162,9 +451,25 @@ const Tables = {
     },
     
     /**
+     * Wizard tugmalarini va onclickni tiklash (oddiy modal uchun)
+     */
+    resetSaveButton: function() {
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) {
+            saveBtn.onclick = null;
+            saveBtn.innerHTML = '<span class="material-icons">save</span> Saqlash';
+        }
+        const b = document.getElementById('wizBackBtn');
+        if (b) b.remove();
+    },
+
+    /**
      * Form yaratish
      */
     renderForm: function(data = {}) {
+        // Oddiy modal uchun wizard holatini tozalash
+        this.resetSaveButton();
+
         const page = CONFIG.PAGES[this.currentPage];
         const formFields = document.getElementById('formFields');
         let html = '';

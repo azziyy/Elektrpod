@@ -94,9 +94,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('addBtn').addEventListener('click', () => Tables.openAddModal());
     
     // Modal events
-    document.getElementById('closeModal').addEventListener('click', () => UI.closeModal('dataModal'));
-    document.getElementById('cancelBtn').addEventListener('click', () => UI.closeModal('dataModal'));
-    document.getElementById('saveBtn').addEventListener('click', () => Tables.saveForm());
+    document.getElementById('closeModal').addEventListener('click', () => {
+        UI.closeModal('dataModal');
+        Tables.resetSaveButton();
+    });
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+        UI.closeModal('dataModal');
+        Tables.resetSaveButton();
+    });
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        // Wizard rejimida saveBtn.onclick alohida ishlaydi (saveHisoblagichBatch/goToHisoblagichStep2)
+        // Faqat oddiy modal uchun saveForm chaqiriladi
+        const saveBtn = document.getElementById('saveBtn');
+        if (!saveBtn.onclick) {
+            Tables.saveForm();
+        }
+    });
     
     // Modal form submit (Enter tugmasi)
     document.getElementById('dataForm').addEventListener('submit', (e) => {
@@ -126,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal:not(.hidden)').forEach(m => {
                 m.classList.add('hidden');
+                if (m.id === 'dataModal') Tables.resetSaveButton();
             });
         }
     });
@@ -135,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.classList.add('hidden');
+                if (modal.id === 'dataModal') Tables.resetSaveButton();
             }
         });
     });
