@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#1976d2">
+    <title>Elektr Hisoblagich Tizimi</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Excel export library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF export libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+    <!-- LOGIN SAHIFASI -->
+    <div id="loginPage" class="login-page">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="material-icons login-icon">electric_bolt</span>
+                <h1>Elektr Tizimi</h1>
+                <p>Hisoblagich va Liniyalar boshqaruvi</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <span class="material-icons">person</span>
+                    <input type="text" id="loginUsername" placeholder="Foydalanuvchi logini" required autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <span class="material-icons">lock</span>
+                    <input type="password" id="loginPassword" placeholder="Parol" required autocomplete="current-password">
+                    <span class="material-icons toggle-password" id="togglePassword">visibility</span>
+                </div>
+                <div class="login-error" id="loginError"></div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <span class="material-icons">login</span>
+                    Kirish
+                </button>
+            </form>
+            <div class="login-hint" id="loginHint">
+                <span class="material-icons" style="font-size:16px;vertical-align:middle;">info</span>
+                Vaqtinchalik login: <b>Admin</b> / <b>1234</b>
+            </div>
+            <div class="login-footer">
+                <button id="darkModeToggleLogin" class="icon-btn" title="Qorong'u rejim">
+                    <span class="material-icons">dark_mode</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ASOSIY SAHIFA -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="icon-btn" id="menuToggle" aria-label="Menyu">
+                    <span class="material-icons">menu</span>
+                </button>
+                <h2 id="pageTitle">Podstansiyalar</h2>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="refreshBtn" title="Yangilash">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="icon-btn" id="darkModeToggle" title="Qorong'u rejim">
+                    <span class="material-icons">dark_mode</span>
+                </button>
+                <div class="user-info">
+                    <span class="material-icons">account_circle</span>
+                    <span id="currentUser"></span>
+                </div>
+                <button class="icon-btn" id="logoutBtn" title="Chiqish">
+                    <span class="material-icons">logout</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Drawer (Yon menyu) -->
+        <aside class="drawer" id="drawer">
+            <div class="drawer-header">
+                <span class="material-icons">dashboard</span>
+                <span>Bo'limlar</span>
+            </div>
+            <nav class="drawer-nav">
+                <button class="drawer-item active" data-page="podstansiya">
+                    <span class="material-icons">electrical_services</span>
+                    <span>Podstansiyalar</span>
+                </button>
+                <button class="drawer-item" data-page="liniya">
+                    <span class="material-icons">timeline</span>
+                    <span>Liniyalar</span>
+                </button>
+                <button class="drawer-item" data-page="hisoblagich">
+                    <span class="material-icons">speed</span>
+                    <span>Hisoblagich ko'rsatkichlari</span>
+                </button>
+            </nav>
+            <div class="drawer-footer">
+                <small>v1.0.0 © 2026</small>
+            </div>
+        </aside>
+
+        <div class="drawer-overlay" id="drawerOverlay"></div>
+
+        <!-- Asosiy kontent -->
+        <main class="content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary" id="addBtn">
+                        <span class="material-icons">add</span>
+                        <span>Qo'shish</span>
+                    </button>
+                    <button class="btn btn-secondary" id="refreshDataBtn">
+                        <span class="material-icons">sync</span>
+                        <span class="hide-mobile">Yangilash</span>
+                    </button>
+                </div>
+                <div class="toolbar-center">
+                    <div class="search-box">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="searchInput" placeholder="Qidirish...">
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-success" id="exportExcelBtn" title="Excel eksport">
+                        <span class="material-icons">grid_on</span>
+                        <span class="hide-mobile">Excel</span>
+                    </button>
+                    <button class="btn btn-danger" id="exportPdfBtn" title="PDF eksport">
+                        <span class="material-icons">picture_as_pdf</span>
+                        <span class="hide-mobile">PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Panel (faqat Hisoblagich uchun) -->
+            <div class="filter-panel hidden" id="filterPanel">
+                <div class="filter-group">
+                    <label>
+                        <span class="material-icons">date_range</span>
+                        Boshlanish sanasi:
+                    </label>
+                    <input type="date" id="filterDateFrom">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <span class="material-icons">date_range</span>
+                        Tugash sanasi:
+                    </label>
+                    <input type="date" id="filterDateTo">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <span class="material-icons">schedule</span>
+                        Vaqt:
+                    </label>
+                    <select id="filterTime">
+                        <option value="">Hammasi</option>
+                        <option value="00:00">00:00</option>
+                        <option value="04:00">04:00</option>
+                        <option value="08:00">08:00</option>
+                        <option value="12:00">12:00</option>
+                        <option value="16:00">16:00</option>
+                        <option value="20:00">20:00</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="applyFilterBtn">
+                    <span class="material-icons">filter_alt</span>
+                    Filter
+                </button>
+                <button class="btn btn-secondary" id="clearFilterBtn">
+                    <span class="material-icons">clear</span>
+                    Tozalash
+                </button>
+            </div>
+
+            <!-- Ma'lumotlar jadvali -->
+            <div class="table-container">
+                <div class="loading-overlay hidden" id="loadingOverlay">
+                    <div class="spinner"></div>
+                    <p>Yuklanmoqda...</p>
+                </div>
+                <table class="data-table" id="dataTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div class="no-data hidden" id="noData">
+                    <span class="material-icons">inbox</span>
+                    <p>Ma'lumotlar topilmadi</p>
+                </div>
+            </div>
+
+            <!-- Statistika -->
+            <div class="stats-bar">
+                <span>Jami yozuvlar: <strong id="totalRecords">0</strong></span>
+                <span id="filteredInfo"></span>
+            </div>
+        </main>
+
+        <!-- Modal (Qo'shish/Tahrirlash) -->
+        <div class="modal hidden" id="dataModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Yangi yozuv qo'shish</h3>
+                    <button class="icon-btn" id="closeModal">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <form id="dataForm" class="modal-body">
+                    <div id="formFields"></div>
+                </form>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelBtn">
+                        <span class="material-icons">cancel</span>
+                        Bekor qilish
+                    </button>
+                    <button class="btn btn-primary" id="saveBtn">
+                        <span class="material-icons">save</span>
+                        Saqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasdiqlash Modal -->
+        <div class="modal hidden" id="confirmModal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h3>Tasdiqlash</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage">Haqiqatan ham o'chirmoqchimisiz?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="confirmCancel">Yo'q</button>
+                    <button class="btn btn-danger" id="confirmOk">Ha, o'chirish</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast/Snackbar -->
+        <div class="snackbar" id="snackbar"></div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/tables.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
