@@ -9,10 +9,10 @@ const CONFIG = {
     // ⚠️ MUHIM: Bu URL ni Apps Script ni QAYTADAN deploy qilgandan keyin
     // yangi URL bilan ALMASHTIRING (Deploy > New deployment > Web app)
     // Eski URL ishlamaydi, chunki yangi Code.gs hali deploy qilinmagan.
-    API_URL: 'https://script.google.com/macros/s/AKfycbyCBJIFjkQZa3ko3XcndHVyN1iA6TupQIl6uQrEiJ49ENzAHfWXVQwOpXECtKQz4bZy/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbzi5zUIw6R0yaTVYn3Hz_fCtuoEJ3aSPlpmtuBmzoEsianYfluEixuh8dr86_5QaioDAg/exec',
     
     // Google Sheet ID (URL dan olinadi)
-    SHEET_ID: '1QKPSqZFhVO8ythj8BV5dHPDXs9L3Gbwp2N-X7oT7gs4',
+    SHEET_ID: '1Jn6NUR9AavdoSzxMUnX9hH2RFB0kvYF44hEBV9c9Opg',
     
     // Sheet nomlari (Google Sheets dagi tab nomlari)
     SHEETS: {
