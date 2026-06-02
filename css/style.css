@@ -958,3 +958,91 @@ body.dark-mode .login-hint {
 body.dark-mode .login-hint b {
     color: #64b5f6;
 }
+
+/* ========================================
+   HISOBLAGICH WIZARD (2-bosqichli qo'shish)
+   ======================================== */
+.wizard-step .form-field {
+    margin-bottom: 16px;
+}
+.wizard-info {
+    background: rgba(25, 118, 210, 0.08);
+    border-left: 4px solid var(--primary);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+.wizard-info > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.wizard-info .material-icons {
+    font-size: 18px;
+    color: var(--primary);
+}
+.wizard-table-wrap {
+    max-height: 50vh;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+.wizard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.wizard-table thead {
+    background: var(--surface-2);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.wizard-table th,
+.wizard-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--divider);
+    text-align: center;
+}
+.wizard-table th {
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface-2);
+}
+.wizard-table .liniya-name-cell {
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+    background: var(--surface-2);
+    position: sticky;
+    left: 0;
+}
+.wizard-table input[type="number"] {
+    width: 100%;
+    min-width: 80px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 14px;
+    text-align: right;
+}
+.wizard-table input[type="number"]:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.18);
+}
+body.dark-mode .wizard-info {
+    background: rgba(100, 181, 246, 0.10);
+}
+@media (max-width: 600px) {
+    .wizard-table th,
+    .wizard-table td { padding: 6px 6px; font-size: 13px; }
+    .wizard-table input[type="number"] { min-width: 60px; padding: 4px 6px; }
+}
